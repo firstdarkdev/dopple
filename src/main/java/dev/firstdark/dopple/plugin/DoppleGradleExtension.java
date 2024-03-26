@@ -1,3 +1,9 @@
+/*
+ * This file is part of dopple, licensed under the MIT License (MIT).
+ *
+ * Copyright (c) 2024 HypherionSA and Contributors
+ *
+ */
 package dev.firstdark.dopple.plugin;
 
 import lombok.Getter;
