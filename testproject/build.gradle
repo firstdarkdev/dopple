@@ -1,0 +1,23 @@
+plugins {
+    id 'java'
+    id 'dev.firstdark.dopple'
+}
+
+group = 'dev.firstdark.dople'
+version = '1.0.0'
+
+dopple {
+    serviceToken.set("TOKEN HERE")
+}
+
+project.afterEvaluate {
+    println(dopple.get("CLIENT_SECRET"))
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+
+}

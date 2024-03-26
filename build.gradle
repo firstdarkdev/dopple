@@ -1,0 +1,102 @@
+plugins {
+    id 'java'
+    id 'idea'
+    id 'java-gradle-plugin'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.gradle.plugin-publish' version '1.2.1'
+    id 'com.diffplug.spotless' version '6.13.0'
+}
+apply plugin: 'maven-publish'
+
+group = 'dev.firstdark'
+version = "${version_base}.${version_patch}"
+description = "Gradle plugin to expose Doppler secrets as environment variables"
+archivesBaseName = 'Dopple'
+java.toolchain.languageVersion = JavaLanguageVersion.of(8)
+
+if (System.getenv('BUILD_NUMBER') != null) {
+    var build = (System.getenv('BUILD_NUMBER').toInteger() - 1)
+    version = "${version_base}.${build}"
+}
+
+configurations {
+    shadeMe
+    implementation.extendsFrom shadeMe
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url "https://maven.firstdark.dev/releases"
+    }
+}
+
+dependencies {
+    implementation gradleApi()
+
+    compileOnly "org.projectlombok:lombok:${lombok}"
+    annotationProcessor "org.projectlombok:lombok:${lombok}"
+    shadeMe "com.squareup.okhttp3:okhttp:${okhttp}"
+    shadeMe "com.google.code.gson:gson:${gson}"
+
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${junit}"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junit}"
+
+    testCompileOnly "org.projectlombok:lombok:${lombok}"
+    testAnnotationProcessor "org.projectlombok:lombok:${lombok}"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+shadowJar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    configurations = [project.configurations.getByName("shadeMe")]
+    archiveClassifier.set(null)
+}
+
+gradlePlugin {
+    plugins {
+        modPublisherPlugin {
+            id = 'dev.firstdark.dopple'
+            description = project.description
+            displayName = 'Dopple'
+            version = project.version
+            implementationClass = "dev.firstdark.dopple.plugin.DopplePlugin"
+            tags.set(['secrets', 'environment', 'doppler'])
+        }
+    }
+}
+
+jar {
+    manifest {
+        attributes([
+                'Timestamp'               : System.currentTimeMillis(),
+                'Specification-Title'     : project.archivesBaseName,
+                'Specification-Version'   : project.version,
+                'Implementation-Title'    : project.archivesBaseName,
+                'Implementation-Version'  : project.version,
+                'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+                'Built-On-Java'           : "${System.getProperty('java.vm.version')} (${System.getProperty('java.vm.vendor')})"
+        ])
+    }
+}
+
+spotless {
+    java {
+        licenseHeaderFile(rootProject.file("HEADER")).yearSeparator("-")
+    }
+}
+
+publishing {
+    repositories {
+        maven {
+            url System.getenv('MAVEN_URL')
+            credentials {
+                username System.getenv('MAVEN_USER')
+                password System.getenv('MAVEN_PASS')
+            }
+        }
+    }
+}
